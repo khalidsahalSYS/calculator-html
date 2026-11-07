@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>حاسبة</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #101827, #26354d);
+      color: #f8fafc;
+      font-family: system-ui, sans-serif;
+    }
+
+    .calculator {
+      width: min(100%, 360px);
+      padding: 22px;
+      border: 1px solid #ffffff20;
+      border-radius: 24px;
+      background: #182335;
+      box-shadow: 0 24px 60px #0006;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      color: #cbd5e1;
+      font-size: 1rem;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .display {
+      min-height: 100px;
+      display: flex;
+      align-items: end;
+      justify-content: flex-end;
+      overflow: hidden;
+      margin-bottom: 18px;
+      padding: 16px;
+      border-radius: 16px;
+      background: #0c1421;
+      color: #fff;
+      font-size: clamp(2rem, 10vw, 3rem);
+      direction: ltr;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      direction: ltr;
+    }
+
+    button {
+      min-height: 62px;
+      border: 0;
+      border-radius: 14px;
+      background: #29374c;
+      color: #f8fafc;
+      font: inherit;
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: transform 120ms, filter 120ms, background 120ms;
+    }
+
+    button:hover { filter: brightness(1.2); }
+    button:active { transform: scale(.96); }
+    button:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+
+    .utility { background: #3a4960; }
+    .operator { background: #2563eb; }
+    .equals { grid-row: span 2; background: #16a34a; }
+    .zero { grid-column: span 2; }
+  </style>
+</head>
+<body>
+  <main class="calculator" aria-label="آلة حاسبة">
+    <h1>حاسبة</h1>
+    <output class="display" id="display" aria-live="polite">0</output>
+
+    <div class="keys">
+      <button class="utility" data-action="clear" aria-label="مسح الكل">AC</button>
+      <button class="utility" data-action="delete" aria-label="حذف آخر رقم">DEL</button>
+      <button class="utility" data-action="percent" aria-label="نسبة مئوية">%</button>
+      <button class="operator" data-action="operator" data-value="÷" aria-label="قسمة">÷</button>
+
+      <button data-action="digit" data-value="7">7</button>
+      <button data-action="digit" data-value="8">8</button>
+      <button data-action="digit" data-value="9">9</button>
+      <button class="operator" data-action="operator" data-value="×" aria-label="ضرب">×</button>
+
+      <button data-action="digit" data-value="4">4</button>
+      <button data-action="digit" data-value="5">5</button>
+      <button data-action="digit" data-value="6">6</button>
+      <button class="operator" data-action="operator" data-value="−" aria-label="طرح">−</button>
+
+      <button data-action="digit" data-value="1">1</button>
+      <button data-action="digit" data-value="2">2</button>
+      <button data-action="digit" data-value="3">3</button>
+      <button class="operator" data-action="operator" data-value="+" aria-label="جمع">+</button>
+
+      <button class="zero" data-action="digit" data-value="0">0</button>
+      <button data-action="decimal" aria-label="فاصلة عشرية">.</button>
+      <button class="equals" data-action="equals" aria-label="يساوي">=</button>
+    </div>
+  </main>
+
+  <script>
+    const display = document.querySelector("#display");
+    let current = "0";
+    let stored = null;
+    let operation = null;
+    let startNewNumber = false;
+
+    function updateDisplay() {
+      display.textContent = current;
+    }
+
+    function enterDigit(digit) {
+      if (current === "خطأ") current = "0";
+      if (startNewNumber || current === "0") {
+        current = digit;
+        startNewNumber = false;
+      } else if (current.length < 14) {
+        current += digit;
+      }
+      updateDisplay();
+    }
+
+    function calculate(a, b, op) {
+      switch (op) {
+        case "+": return a + b;
+        case "−": return a - b;
+        case "×": return a * b;
+        case "÷": return b === 0 ? NaN : a / b;
+        default: return b;
+      }
+    }
+
+    function formatResult(value) {
+      if (!Number.isFinite(value)) return "خطأ";
+      return String(Number(value.toPrecision(12)));
+    }
+
+    function chooseOperation(nextOperation) {
+      if (current === "خطأ") return;
+      const value = Number(current);
+
+      if (operation && !startNewNumber) {
+        current = formatResult(calculate(stored, value, operation));
+        updateDisplay();
+      } else {
+        current = formatResult(value);
+      }
+
+      stored = Number(current);
+      operation = nextOperation;
+      startNewNumber = true;
+    }
+
+    function equals() {
+      if (!operation || stored === null || current === "خطأ") return;
+      current = formatResult(calculate(stored, Number(current), operation));
+      stored = null;
+      operation = null;
+      startNewNumber = true;
+      updateDisplay();
+    }
+
+    function handleAction(action, value) {
+      if (action === "digit") enterDigit(value);
+
+      if (action === "decimal" && current !== "خطأ" && !startNewNumber && !current.includes(".")) {
+        current += ".";
+        updateDisplay();
+      } else if (action === "decimal" && startNewNumber) {
+        current = "0.";
+        startNewNumber = false;
+        updateDisplay();
+      }
+
+      if (action === "operator") chooseOperation(value);
+      if (action === "equals") equals();
+
+      if (action === "clear") {
+        current = "0";
+        stored = null;
+        operation = null;
+        startNewNumber = false;
+        updateDisplay();
+      }
+
+      if (action === "delete" && !startNewNumber && current !== "خطأ") {
+        current = current.length > 1 ? current.slice(0, -1) : "0";
+        updateDisplay();
+      }
+
+      if (action === "percent" && current !== "خطأ") {
+        current = formatResult(Number(current) / 100);
+        updateDisplay();
+      }
+    }
+
+    document.querySelector(".keys").addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (button) handleAction(button.dataset.action, button.dataset.value);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (/^\d$/.test(event.key)) handleAction("digit", event.key);
+      else if (event.key === ".") handleAction("decimal");
+      else if (event.key === "Enter" || event.key === "=") handleAction("equals");
+      else if (event.key === "Backspace") handleAction("delete");
+      else if (event.key === "Escape") handleAction("clear");
+      else {
+        const operators = { "+": "+", "-": "−", "*": "×", "/": "÷" };
+        if (operators[event.key]) handleAction("operator", operators[event.key]);
+      }
+    });
+  </script>
+</body>
+</html>
