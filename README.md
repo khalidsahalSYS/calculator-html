@@ -1,42 +1,57 @@
-# Windows Desktop Calculator (C + HTML5)
+# Windows 64-bit Calculator Project
 
-A small 64-bit Windows calculator. The responsive HTML/CSS/JavaScript interface runs in a standalone Microsoft Edge app window when Edge is installed. A native C executable serves the page and performs every arithmetic operation through a loopback-only HTTP API; it does not evaluate calculations in JavaScript. If Edge is unavailable, the app opens the local page in the default browser.
+This project is a small calculator program written in C with modular logic and automated tests.
 
-## Build (64-bit Windows)
+## Structure
 
-### MSVC
+- `src/calculator.h` — function declarations
+- `src/calculator.c` — math implementation
+- `src/app.c` — CLI entry point
+- `tests/test_calculator.c` — unit tests
+- `Makefile` — build and test automation
+- `.github/workflows/build-test.yml` — CI pipeline
 
-1. Install Visual Studio Build Tools with **Desktop development with C++** (including the Windows 10/11 SDK).
-2. Open **x64 Native Tools Command Prompt for VS** in the project directory.
-3. Run:
+## Build and test
 
-```bat
-build.bat
+On a system with MinGW cross-compiler installed:
+
+```bash
+make test
+make app
 ```
 
-This produces `build\calculator.exe` and copies `index.html` beside it. To compile manually:
+This builds and runs the tests, then builds the Windows 64-bit application `build/app.exe`.
 
-```bat
-cl /nologo /O2 /W4 /TC /D_CRT_SECURE_NO_WARNINGS src\server.c src\calculator.c /Febuild\calculator.exe /link /SUBSYSTEM:WINDOWS ws2_32.lib shell32.lib
-copy index.html build\index.html
+## Example run
+
+```bash
+./build/app.exe 10 + 5
 ```
 
-### MinGW-w64 GCC
+Expected output:
 
-From an x64 MinGW-w64 shell, run:
-
-```sh
-mkdir -p build
-x86_64-w64-mingw32-gcc -std=c11 -O2 -Wall -Wextra -D_CRT_SECURE_NO_WARNINGS -mwindows src/server.c src/calculator.c -o build/calculator.exe -lws2_32 -lshell32
-cp index.html build/index.html
+```text
+15
 ```
 
-## Run
+## Required MinGW compiler
 
-Launch `build\calculator.exe`. It serves the UI and calculation endpoint at `127.0.0.1:8765`; keep `index.html` alongside the executable. Close the calculator server from Task Manager after closing the browser window. The app needs no WebView SDK or third-party library. If port 8765 is already occupied, close the other application and retry.
+```bash
+sudo apt-get install mingw-w64
+```
 
-## Design
+Then build:
 
-- `src/calculator.c` contains the four arithmetic operations, validates finite values, and returns a specific division-by-zero status.
-- `src/server.c` is a Windows loopback HTTP server. `POST /calculate` accepts JSON such as `{"a":12,"b":3,"op":"/"}` and returns a result or an error. It binds only to `127.0.0.1`.
-- `index.html` is the responsive calculator UI. Button and keyboard input are supported.
+```bash
+make app
+```
+
+## Windows target
+
+The MinGW compiler uses:
+
+```bash
+-m64
+```
+
+so the output is a native 64-bit Windows executable.
