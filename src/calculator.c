@@ -1,6 +1,6 @@
 #include "calculator.h"
 #include <float.h>
-
+#include <stddef.h>
 static int is_finite_number(double value) {
     return value == value && value <= DBL_MAX && value >= -DBL_MAX;
 }
